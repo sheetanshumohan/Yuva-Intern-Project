@@ -2,8 +2,6 @@ package com.foodplant.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.PessimisticLockingFailureException;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -36,10 +34,6 @@ public class ApiExceptionHandler {
   ResponseEntity<Problem> resource(NoResourceFoundException ex,HttpServletRequest req) { return reply(HttpStatus.NOT_FOUND,"Resource not found",req,Map.of()); }
   @ExceptionHandler(ConflictException.class)
   ResponseEntity<Problem> conflict(ConflictException ex,HttpServletRequest req) { return reply(HttpStatus.CONFLICT,ex.getMessage(),req,Map.of()); }
-  @ExceptionHandler({ObjectOptimisticLockingFailureException.class,PessimisticLockingFailureException.class})
-  ResponseEntity<Problem> concurrency(Exception ex,HttpServletRequest req) {
-    return reply(HttpStatus.CONFLICT,"Concurrent update conflict; retry the operation",req,Map.of());
-  }
   @ExceptionHandler(DataIntegrityViolationException.class)
   ResponseEntity<Problem> integrity(DataIntegrityViolationException ex,HttpServletRequest req) { return reply(HttpStatus.CONFLICT,"Record conflicts with existing references or constraints",req,Map.of()); }
   @ExceptionHandler({IllegalArgumentException.class,MethodArgumentTypeMismatchException.class,HttpMessageNotReadableException.class})
