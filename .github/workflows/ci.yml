@@ -48,6 +48,8 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p verification
+          # k6 container uses a non-root UID; allow it to persist the JSON evidence.
+          chmod a+rwx verification
           docker compose --profile loadtest run --rm k6 | tee verification/k6.log
       - name: Record real evidence
         if: always()
