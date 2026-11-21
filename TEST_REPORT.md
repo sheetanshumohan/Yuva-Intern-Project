@@ -1,54 +1,37 @@
-# Verification report — Food Plant REST API Backend
+# Food Plant REST API — Verified CI Test Report
 
-**Audit date:** 21 November 2026  
-**Status:** Source-level checks passed; Spring/runtime acceptance results **not yet verified**.
+**Verification date:** 21 November 2026  
+**Repository:** https://github.com/sheetanshumohan/Yuva-Intern-Project  
+**Successful acceptance workflow:** https://github.com/sheetanshumohan/Yuva-Intern-Project/actions/runs/44872259269  
+**Status:** **PASS** for the automated CI acceptance workflow on the tested GitHub-hosted runner.
 
-This report distinguishes actual checks executed in the artifact-generation environment from tests that require Docker, Maven Central, PostgreSQL, Redis, and k6. **A source archive with configured tests is not the same as a passing test report.**
+## Actual recorded results
 
-## Results actually obtained
-
-| Check | Observed result | Execution evidence |
+| Acceptance check | Measured result | Outcome |
 |---|---|---|
-| Java language syntax, including tests | **PASS** | Java 21 `JavacTask.parse()` accepted all **36 Java source/test files** (does not resolve external dependencies) |
-| Domain weight conversion | **PASS** | `javac` compiled the production `WeightNormalizer` class; **11** behavior checks passed in `WeightNormalizerSelfTest` |
-| OpenAPI → implemented Controller paths | **PASS** | Exactly **32 unique** OpenAPI operations map to the 32 annotated routes in Java controllers |
-| OpenAPI → Postman | **PASS** | Exactly **32** matching operation IDs and 32 generated Postman requests |
-| OpenAPI schema refs / auth / error definitions | **PASS** | Static schema walk and security assertions |
-| Spring, Compose, CI, test YAML | **PASS** | Successfully parsed using PyYAML |
-| Fixture consistency | **PASS** | Three production lines, machine-to-line mapping, 5 batch events, duplicate legacy numbers, nullable night moisture, valid material consumption and stock balances |
-| Python verification scripts | **PASS** | `python -m py_compile` of live smoke and reporting scripts |
+| Maven compile and verification | BUILD SUCCESS | PASS |
+| JUnit and MockMvc tests | 82 run, 0 failures, 0 errors, 0 skipped | PASS |
+| JaCoCo line coverage | 92.44%, required ≥75% | PASS |
+| Static Java, OpenAPI, Postman, fixtures checks | CI validation step succeeded | PASS |
+| Docker build and startup | PostgreSQL, Redis and API built and started | PASS |
+| HTTP smoke and concurrency checks | 74 successful checks, including 10 concurrent transactions | PASS |
+| k6 requests | 12,001 HTTP requests | PASS |
+| k6 throughput | ~199.13 requests/sec average during 200 arrivals/sec configured scenario | PASS (tool thresholds) |
+| k6 p95 HTTP response latency | 1.51 ms, required <300 ms | PASS |
+| k6 HTTP failures | 0 / 12,001 | PASS |
+| k6 assertions | 24,000 / 24,000 | PASS |
+| GitHub Actions result | completed / success | PASS |
 
-## Checks not executed here
+The k6 run was scheduled with **200 arrivals per second** for one minute. Measured average HTTP throughput was approximately **199.13 requests/second**, and no iterations were dropped. Measurements are from an isolated GitHub Actions runner and **do not guarantee equivalent production throughput**.
 
-| Acceptance check | Status | How to obtain trustworthy evidence |
-|---|---|---|
-| Maven compile / real Spring context startup | **NOT VERIFIED** | `docker compose --profile test run --rm maven-test` |
-| JUnit / authenticated MockMvc tests | **NOT VERIFIED** | Maven `clean verify` XML output in `target/surefire-reports` |
-| JaCoCo ≥75% LINE coverage | **NOT MEASURED** | Actual `target/site/jacoco` report; `verify` fails below 75% |
-| PostgreSQL Flyway migrations V1+V2 | **NOT VERIFIED** | Docker API startup and live smoke test |
-| Redis cache + invalidation | **NOT VERIFIED** | Live smoke tests on create/update/delete production line |
-| Concurrent stock spend correctness | **NOT VERIFIED** | Live smoke test with 10 simultaneous stock-consumption requests |
-| Authorization, JSON validation, audit ledger | **NOT VERIFIED** | Running-API smoke + JUnit tests |
-| 200 RPS sustained and p95 <300ms | **NOT MEASURED** | k6 Compose profile; raw output + JSON in `verification/` |
-| All endpoints free of unhandled server errors | **NOT PROVEN** | Negative-path tests cover important cases but cannot prove every possible input |
+## Evidence
 
-Maven, Docker and k6 were unavailable in the authoring environment. Maven dependencies could not be downloaded due unavailable Maven Central DNS access. **No coverage percentages, latency claims or full-test successes have been fabricated.**
+- [Successful CI workflow](https://github.com/sheetanshumohan/Yuva-Intern-Project/actions/runs/44872259269)
+- [CI evidence artifacts](https://github.com/sheetanshumohan/Yuva-Intern-Project/actions/runs/44872259269#artifacts) include Maven logs, Surefire test reports, JaCoCo output, API smoke results, k6 logs and JSON output, and generated `verification/RESULTS.md`.
+- The CI workflow definition is [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
-## Additional second-pass audit checks (21 November 2026)
+## Not covered by the acceptance claim
 
-- **PASS (static):** GitHub Actions now uses `set -o pipefail` on both Maven and k6 command pipelines, so an underlying test failure cannot be masked by `tee`.
-- **PASS (source review + syntax):** Material-lot supplier changes and audited output-weight mutations are rejected; their regression tests have been added.
-- **PASS (source review + syntax):** Known concurrent write/locking exceptions map to HTTP 409 rather than unhandled HTTP 500.
-- **PASS (static):** Re-generated OpenAPI and Postman artifacts still match all 32 controller operations.
-- **NOT VERIFIED:** The newly added JUnit regression tests have not been executed against a running Spring context.
+Passing tests does not establish the absence of all bugs or certify production security. Remaining production-hardening work includes TLS termination, secrets management and key rotation, distributed rate limiting for multiple replicas, JWT revocation / refresh, vulnerability scanning, monitoring/alerting, PostgreSQL-backed integration test expansion, and additional adversarial security checks.
 
-## Automated acceptance run on a suitable machine
-
-Use a machine with Docker Desktop (Compose), Python 3.10+ and adequate memory. Maven and k6 run **inside Docker containers**, so local installation is not necessary.
-
-1. Copy `.env.example` to `.env` and replace passwords and `JWT_SECRET` with unpredictable values.
-2. In Windows PowerShell, run `powershell -ExecutionPolicy Bypass -File .\scripts\verify_all.ps1`; on Linux/macOS run `bash scripts/verify_all.sh`.
-3. The automation runs Maven test+JaCoCo, Docker PostgreSQL/Redis startup, real API checks, 10 concurrent stock requests, then k6 at 200 RPS for 60 seconds.
-4. Preserve the generated `verification/RESULTS.md`, logs, Surefire XML, JaCoCo report and `verification/k6.json`. They are evidence for an actual acceptance result and are intentionally not prepopulated in this archive.
-
-This run is also configured in `.github/workflows/ci.yml` for a pushed GitHub repository. Performance results depend on the actual runner and hardware; if the targets fail, measure and tune before claiming success.
+This report summarizes **real evidence obtained in GitHub CI**, rather than inferred or fabricated results. If the workflow is changed, rerun it and update these recorded measurements.
