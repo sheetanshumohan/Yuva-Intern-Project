@@ -2,7 +2,7 @@
 
 A **Java 21 / Spring Boot 3.5** REST API for a fictional Kochi spice-processing plant. Built as an internship assignment: three production lines, suppliers, lots, unique traceability IDs, audited material consumption, QA checks, JWT security, OpenAPI/Swagger, PostgreSQL, Redis, tests, and Docker Compose.
 
-> **Project status:** Source code, sample fixtures, API specification, Postman requests, regression tests, CI configuration and k6 scenario are included. **Execution, 75% coverage and the 200 RPS / <300 ms performance target have not been verified in this build environment.** See [TEST_REPORT.md](TEST_REPORT.md).
+> **Project status:** Source code, sample fixtures, API specification, Postman requests, regression tests, CI configuration and k6 scenario are included. **CI acceptance passed on 21 November 2026**: 82/82 automated tests, 92.44% JaCoCo line coverage, 74/74 live API smoke checks, and a k6 200 RPS target scenario with 12,001 requests, zero HTTP failures, and 1.51 ms p95 latency on a GitHub-hosted runner. See [the successful GitHub Actions run](https://github.com/sheetanshumohan/Yuva-Intern-Project/actions/runs/44872259269) and [TEST_REPORT.md](TEST_REPORT.md).
 
 ## Quick start (Windows PowerShell / macOS / Linux)
 
@@ -53,7 +53,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\verify_all.ps1
 
 On **Linux/macOS**, run `bash scripts/verify_all.sh`. These execute **real tests** using Docker-contained Maven and k6; no host Maven or k6 installation is necessary. They perform JUnit/MockMvc verification with a 75% JaCoCo line-coverage gate, build PostgreSQL/Redis/API containers, run a live HTTP test covering JWT, CRUD, validation, audit, Redis invalidation and concurrent stock locking, and exercise the cached summary endpoint at **200 requests/sec for 60 seconds** with a 300 ms p95 threshold. Results are saved in `verification/RESULTS.md` and original reports/logs. A failed gate stops the script.
 
-Offline source checks, for environments with JDK 21, Python and PyYAML, can be run with `bash scripts/validate_offline.sh`. These cannot replace the real acceptance run. **The authoring environment lacked Docker and Maven Central connectivity**, so tests must not be presented as passed until the live command succeeds.
+Offline source checks, for environments with JDK 21, Python and PyYAML, can be run with `bash scripts/validate_offline.sh`. These cannot replace the real acceptance run. **Verification:** The authoring environment lacked Docker and Maven Central connectivity; the GitHub Actions runner subsequently executed and passed the full acceptance workflow. Performance measurements apply to that runner and scenario, not to an untested production deployment.
 
 ## Architecture
 
@@ -166,7 +166,7 @@ mvn -B clean verify
 - JUnit XML reports: `target/surefire-reports/`.
 - The Maven `verify` phase **enforces ≥75% line coverage**. The project has test cases for validation, login, RBAC, CRUD, filtering, grams/kg, null moisture, reused batch number, QA, trace, audit, archiving and stock conflicts.
 - CI workflow also builds the Docker service and runs live PostgreSQL/Redis smoke and k6 load checks on GitHub Actions.
-- It is **not valid to claim the gate passes until the tests are actually executed**. The source archive includes an honest [`TEST_REPORT.md`](TEST_REPORT.md) with the verification status.
+- The CI run on 21 November 2026 passed **82 tests**, with **92.44% line coverage**, exceeding the minimum 75% gate. Evidence and execution details are recorded in [`TEST_REPORT.md`](TEST_REPORT.md).
 
 Simulated festival production ramp-up (requires [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/)):
 
@@ -177,7 +177,7 @@ k6 run -e BASE_URL=http://localhost:8080 \
   loadtest/festival-ramp.js
 ```
 
-The scenario logs in once and drives **200 requests per second for 60 seconds** against the Redis-cached summary endpoint, with `p(95)<300 ms`, `<1%` failure and zero dropped iterations as thresholds. These are **acceptance criteria, not measured results**. Run with adequate VUs and server/DB/Redis resources; record the actual results in `TEST_REPORT.md`.
+The scenario logs in once and drives **200 requests per second for 60 seconds** against the Redis-cached summary endpoint, with `p(95)<300 ms`, `<1%` failure and zero dropped iterations as thresholds. These targets were **measured in CI on 21 November 2026**: 12,001 requests at approximately 199.13 requests/sec averaged over the run, 1.51 ms p95 HTTP latency, and zero HTTP failures. Results can differ on other hardware; see [`TEST_REPORT.md`](TEST_REPORT.md).
 
 ## Project layout
 
@@ -229,21 +229,17 @@ food-plant-rest-api/
 - Dockerfile, Compose (API, PostgreSQL, Redis, Maven test runner and k6 runner), `.env.example`
 - k6 load script and CI pipeline
 - Architecture diagram, ER diagram, data dictionary and security notes
-- Test status report (unverified results explicitly labeled)
+- Verified CI test report, including JUnit, coverage, live integration and k6 results
 
 No real supplier/customer data or credentials are committed. The repository source can be pushed to a GitHub account after local verification.
 
 ## Publishing as your GitHub repository
 
-This package is a **local repository source archive**, not a GitHub-hosted URL. After verifying `mvn clean verify` and Docker startup, create an **empty** repository named `food-plant-rest-api` on your own GitHub account, then run:
+The project is already published at [sheetanshumohan/Yuva-Intern-Project](https://github.com/sheetanshumohan/Yuva-Intern-Project). Clone it with:
 
 ```bash
-git init
-git add .
-git commit -m "Build food plant traceability and inventory REST API"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/food-plant-rest-api.git
-git push -u origin main
+git clone https://github.com/sheetanshumohan/Yuva-Intern-Project.git
+cd Yuva-Intern-Project
 ```
 
 Don't add `.env`, real credentials, generated coverage output or personally identifying supplier data. GitHub Actions automatically runs the coverage gate on push.
