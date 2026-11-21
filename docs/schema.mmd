@@ -1,0 +1,61 @@
+erDiagram
+    USER_ACCOUNTS {
+        UUID id PK
+        varchar email UK
+        varchar password_hash
+        varchar role
+    }
+    SUPPLIERS {
+        UUID id PK
+        varchar name UK
+        varchar contact_email
+        varchar origin_region
+    }
+    PRODUCTION_LINES {
+        UUID id PK
+        varchar code UK
+        numeric capacity_kg_per_day
+    }
+    RAW_MATERIAL_LOTS {
+        UUID id PK
+        varchar lot_code UK
+        UUID supplier_id FK
+        numeric stock_kg
+        boolean archived
+        bigint version
+    }
+    BATCHES {
+        UUID id PK
+        varchar batch_number "not unique"
+        UUID production_line_id FK
+        UUID supplier_id FK
+        numeric raw_weight_kg
+        numeric output_weight_kg
+        numeric moisture_percent "nullable"
+        timestamp produced_at
+    }
+    QUALITY_CHECKS {
+        UUID id PK
+        UUID batch_id FK
+        numeric moisture_percent "nullable"
+        varchar result
+    }
+    MATERIAL_USAGES {
+        UUID id PK
+        UUID batch_id FK
+        UUID material_lot_id FK
+        numeric quantity_kg
+    }
+    INVENTORY_MOVEMENTS {
+        UUID id PK
+        UUID material_lot_id FK
+        numeric change_kg
+        varchar reason
+    }
+    SUPPLIERS ||--o{ RAW_MATERIAL_LOTS : supplies
+    SUPPLIERS ||--o{ BATCHES : sources
+    PRODUCTION_LINES ||--o{ BATCHES : produces
+    BATCHES ||--o{ QUALITY_CHECKS : receives
+    BATCHES ||--o{ MATERIAL_USAGES : consumes
+    RAW_MATERIAL_LOTS ||--o{ MATERIAL_USAGES : used_in
+    RAW_MATERIAL_LOTS ||--o{ INVENTORY_MOVEMENTS : audited_by

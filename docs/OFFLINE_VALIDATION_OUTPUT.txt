@@ -1,0 +1,8 @@
+PASS: JDK javac parsed 36 Java source/test files without syntax errors
+PASS: 11 production WeightNormalizer behavior checks
+PASS: 32 annotated Controller routes exactly match the OpenAPI spec and Postman collection
+PASS: OpenAPI $refs, auth requirements, error responses and material DTO schema valid
+PASS: Spring/Compose/CI/test YAML parse and Flyway V1/V2 migration files exist
+PASS: synthetic manufacturing fixtures have valid machine-line, supplier-lot, QA and stock-balance relationships
+PASS: 3 lines, mixed weights, 2 distinct reused B-001 IDs, night moisture null, 5 seed consumption rows
+NOTE: Static checks do NOT prove Maven, database migrations, HTTP responses, or performance

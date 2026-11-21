@@ -1,0 +1,6 @@
+source_event_id,batch_number,production_line,supplier,product_name,raw_weight,raw_unit,output_weight,output_unit,produced_at,shift,moisture_percent,status,machine_code
+resetA-001,B-001,LINE-01,Coastal Pepper Collective,Ground Black Pepper,500000,g,470,kg,2026-10-01T08:30:00Z,DAY,9.70,COMPLETED,MILL-1
+resetB-001,B-001,LINE-01,Coastal Pepper Collective,Ground Black Pepper,350,kg,330000,g,2026-11-07T22:10:00Z,NIGHT,,QUARANTINED,MILL-2
+batch-T028,T-028,LINE-02,Western Ghats Turmeric Co-op,Turmeric Powder,450,kg,420,kg,2026-11-08T14:15:00Z,EVENING,8.40,COMPLETED,GRINDER-3
+batch-C017,C-017,LINE-03,Malabar Spice Growers,Cardamom Mix,240000,g,230000,g,2026-11-09T23:45:00Z,NIGHT,,IN_PROGRESS,BLENDER-1
+batch-P062,P-062,LINE-01,Coastal Pepper Collective,Premium Pepper,280,kg,264,kg,2026-11-10T07:30:00Z,DAY,10.10,COMPLETED,MILL-1

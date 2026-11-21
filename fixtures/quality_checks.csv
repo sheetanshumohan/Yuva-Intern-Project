@@ -1,0 +1,6 @@
+batch_number,produced_at,checked_at,moisture_percent,result,notes
+B-001,2026-10-01T08:30:00Z,2026-10-01T11:30:00Z,9.70,PASS,Moisture within spec
+B-001,2026-11-07T22:10:00Z,2026-11-07T23:55:00Z,,PENDING,Night shift reading missing
+T-028,2026-11-08T14:15:00Z,2026-11-08T17:10:00Z,8.40,PASS,Colour and moisture acceptable
+C-017,2026-11-09T23:45:00Z,2026-11-10T00:30:00Z,,PENDING,Lab unavailable during night shift
+P-062,2026-11-10T07:30:00Z,2026-11-10T10:45:00Z,10.10,PASS,Final quality released

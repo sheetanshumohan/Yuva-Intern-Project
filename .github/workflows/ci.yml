@@ -1,0 +1,71 @@
+name: Spring Boot CI — tests, PostgreSQL smoke, Redis and k6
+on:
+  push:
+  pull_request:
+jobs:
+  full-acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Configure isolated CI test secrets
+        run: |
+          cat > .env <<'ENV'
+          DB_PASSWORD=ci-local-db-only-NotForProduction2026
+          JWT_SECRET=ci-local-secret-over-32-chars-NOT-PRODUCTION-2026
+          APP_SEED_ENABLED=true
+          ADMIN_PASSWORD=CiAdminPassword12345!
+          STAFF_PASSWORD=CiStaffPassword12345!
+          VIEWER_PASSWORD=CiViewerPassword12345!
+          RATE_LIMIT_PER_MINUTE=15000
+          LOGIN_RATE_LIMIT_PER_MINUTE=30
+          ENV
+      - name: Install offline static-check dependency
+        run: python -m pip install -r requirements-dev.txt
+      - name: Validate Java syntax, real weight conversions, OpenAPI and fixtures
+        run: bash scripts/validate_offline.sh
+      - name: Compile, unit & MockMvc tests, enforce JaCoCo 75%
+        run: |
+          set -o pipefail
+          mvn -B -ntp clean verify | tee verification-maven.log
+      - name: Build PostgreSQL+Redis-backed API containers
+        run: docker compose up --build -d
+      - name: Wait for live API health
+        run: python scripts/wait_for_api.py
+      - name: Live API smoke, cache invalidation and stock concurrency
+        run: python scripts/api_smoke.py | tee verification-smoke.log
+      - name: k6 festival production ramp (200 req/s, p95 under 300ms)
+        run: |
+          set -o pipefail
+          mkdir -p verification
+          docker compose --profile loadtest run --rm k6 | tee verification/k6.log
+      - name: Record real evidence
+        if: always()
+        run: |
+          mkdir -p verification
+          cp verification-maven.log verification/maven.log 2>/dev/null || true
+          cp verification-smoke.log verification/smoke.log 2>/dev/null || true
+          python scripts/verification_report.py || true
+      - name: Upload evidence and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-test-evidence
+          if-no-files-found: ignore
+          path: |
+            verification/**
+            target/surefire-reports/**
+            target/site/jacoco/**
+      - name: Print container logs on failure
+        if: failure()
+        run: docker compose logs --tail=200 api db redis

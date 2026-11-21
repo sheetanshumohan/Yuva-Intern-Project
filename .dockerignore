@@ -1,0 +1,10 @@
+.git
+.github
+.env
+/target
+/.idea
+/.vscode
+*.log
+
+verification
+__pycache__

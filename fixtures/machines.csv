@@ -1,0 +1,5 @@
+machine_code,production_line,machine_type,active
+MILL-1,LINE-01,Hammer mill,true
+MILL-2,LINE-01,Pin mill,true
+GRINDER-3,LINE-02,Turmeric grinder,true
+BLENDER-1,LINE-03,Blending and packing,true

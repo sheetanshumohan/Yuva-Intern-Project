@@ -1,0 +1,25 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:foodplant;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ''
+    driver-class-name: org.h2.Driver
+  flyway:
+    enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  cache:
+    type: none
+app:
+  jwt:
+    secret: test-only-replace-me-this-is-at-least-32-characters-long
+  seed:
+    enabled: true
+    admin-password: TestAdminPassword123!
+    staff-password: TestStaffPassword123!
+    viewer-password: TestViewerPassword123!
+management:
+  health:
+    redis:
+      enabled: false

@@ -1,0 +1,2426 @@
+openapi: 3.0.3
+info:
+  title: Food Plant Traceability & Inventory REST API
+  version: 1.0.0
+  description: Fictional Kochi spice processing unit. All weights normalized to kg;
+    batchNumber is reusable, UUID is stable identifier.
+servers:
+- url: http://localhost:8080
+  description: Local Docker Compose
+tags:
+- name: Authentication
+- name: Suppliers
+- name: Production Lines
+- name: Raw Materials
+- name: Batches
+- name: Quality
+- name: Traceability
+security:
+- bearerAuth: []
+paths:
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      tags:
+      - Authentication
+      summary: Exchange credentials for signed JWT
+      description: No JWT required.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+  /api/v1/auth/users:
+    post:
+      operationId: createUser
+      tags:
+      - Authentication
+      summary: Provision a new user (admin)
+      description: 'Required role: ADMIN (ADMIN also has write privileges).'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRequest'
+    get:
+      operationId: listUsers
+      tags:
+      - Authentication
+      summary: List user accounts (admin)
+      description: 'Required role: ADMIN (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+  /api/v1/suppliers:
+    get:
+      operationId: listSuppliers
+      tags:
+      - Suppliers
+      summary: Search suppliers with pagination
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SupplierResponse'
+                  totalElements:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  number:
+                    type: integer
+                  size:
+                    type: integer
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: query
+        name: search
+        required: false
+        schema:
+          type: string
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: size
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: createSupplier
+      tags:
+      - Suppliers
+      summary: Add supplier
+      description: 'Required role: STAFF (ADMIN also has write privileges).'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierRequest'
+  /api/v1/suppliers/{id}:
+    get:
+      operationId: getSupplier
+      tags:
+      - Suppliers
+      summary: Get supplier by UUID
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: updateSupplier
+      tags:
+      - Suppliers
+      summary: Replace supplier
+      description: 'Required role: STAFF (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierRequest'
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      operationId: deleteSupplier
+      tags:
+      - Suppliers
+      summary: Delete unreferenced supplier
+      description: 'Required role: ADMIN (ADMIN also has write privileges).'
+      responses:
+        '204':
+          description: Successful operation
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/production-lines:
+    get:
+      operationId: listLines
+      tags:
+      - Production Lines
+      summary: Search lines with pagination
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProductionLineResponse'
+                  totalElements:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  number:
+                    type: integer
+                  size:
+                    type: integer
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: query
+        name: search
+        required: false
+        schema:
+          type: string
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: size
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: createLine
+      tags:
+      - Production Lines
+      summary: Add line
+      description: 'Required role: STAFF (ADMIN also has write privileges).'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductionLineResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductionLineRequest'
+  /api/v1/production-lines/summary:
+    get:
+      operationId: lineSummary
+      tags:
+      - Production Lines
+      summary: Redis-cached all-lines summary; k6 load-test target
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductionLineResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+  /api/v1/production-lines/{id}:
+    get:
+      operationId: getLine
+      tags:
+      - Production Lines
+      summary: Get line
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductionLineResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: updateLine
+      tags:
+      - Production Lines
+      summary: Update line and invalidate summary cache
+      description: 'Required role: STAFF (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductionLineResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductionLineRequest'
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      operationId: deleteLine
+      tags:
+      - Production Lines
+      summary: Delete unreferenced line
+      description: 'Required role: ADMIN (ADMIN also has write privileges).'
+      responses:
+        '204':
+          description: Successful operation
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/raw-materials:
+    get:
+      operationId: listMaterials
+      tags:
+      - Raw Materials
+      summary: Search raw material lots with pagination
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MaterialResponse'
+                  totalElements:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  number:
+                    type: integer
+                  size:
+                    type: integer
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: query
+        name: search
+        required: false
+        schema:
+          type: string
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: size
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: createMaterial
+      tags:
+      - Raw Materials
+      summary: Open new stock lot; track opening movement
+      description: 'Required role: STAFF (ADMIN also has write privileges).'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialRequest'
+  /api/v1/raw-materials/{id}:
+    get:
+      operationId: getMaterial
+      tags:
+      - Raw Materials
+      summary: Get material lot
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: updateMaterial
+      tags:
+      - Raw Materials
+      summary: Update metadata; stock must be adjusted separately
+      description: 'Required role: STAFF (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialUpdateRequest'
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      operationId: deleteMaterial
+      tags:
+      - Raw Materials
+      summary: Archive zero-stock material without deleting its stock audit history
+      description: 'Required role: ADMIN (ADMIN also has write privileges).'
+      responses:
+        '204':
+          description: Successful operation
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/raw-materials/{id}/movements:
+    get:
+      operationId: lotMovements
+      tags:
+      - Raw Materials
+      summary: List all inventory ledger movements for lot
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MovementResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/raw-materials/{id}/adjustments:
+    post:
+      operationId: adjustStock
+      tags:
+      - Raw Materials
+      summary: Atomic increase or decrease with audited movement
+      description: 'Required role: STAFF (ADMIN also has write privileges).'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequest'
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/batches:
+    get:
+      operationId: listBatches
+      tags:
+      - Batches
+      summary: Filter by search, lineId, status and shift with pagination
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  content:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BatchResponse'
+                  totalElements:
+                    type: integer
+                  totalPages:
+                    type: integer
+                  number:
+                    type: integer
+                  size:
+                    type: integer
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: query
+        name: search
+        required: false
+        schema:
+          type: string
+      - in: query
+        name: lineId
+        required: false
+        schema:
+          type: string
+      - in: query
+        name: status
+        required: false
+        schema:
+          type: string
+      - in: query
+        name: shift
+        required: false
+        schema:
+          type: string
+      - in: query
+        name: page
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+      - in: query
+        name: size
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+    post:
+      operationId: createBatch
+      tags:
+      - Batches
+      summary: Create traceable batch; kg and grams accepted
+      description: 'Required role: STAFF (ADMIN also has write privileges).'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequest'
+  /api/v1/batches/lookup:
+    get:
+      operationId: lookupBatches
+      tags:
+      - Batches
+      summary: Find all UUID records sharing legacy batchNumber
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BatchResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: query
+        name: batchNumber
+        required: true
+        schema:
+          type: string
+  /api/v1/batches/{id}:
+    get:
+      operationId: getBatch
+      tags:
+      - Batches
+      summary: Get batch by unique UUID
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: updateBatch
+      tags:
+      - Batches
+      summary: Update batch; protect consumed records
+      description: 'Required role: STAFF (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchRequest'
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      operationId: deleteBatch
+      tags:
+      - Batches
+      summary: Reject removal of batches with QA or usage history
+      description: 'Required role: ADMIN (ADMIN also has write privileges).'
+      responses:
+        '204':
+          description: Successful operation
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/batches/{id}/trace:
+    get:
+      operationId: traceBatch
+      tags:
+      - Traceability
+      summary: Join batch, supplier, line, QA and consumption
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TraceResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/batches/{id}/quality-checks:
+    get:
+      operationId: listQualityChecks
+      tags:
+      - Quality
+      summary: List QA observations for batch
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QualityResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: addQualityCheck
+      tags:
+      - Quality
+      summary: Add QA observation; missing moisture is allowed
+      description: 'Required role: STAFF (ADMIN also has write privileges).'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualityResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QualityRequest'
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+  /api/v1/batches/{id}/materials:
+    get:
+      operationId: listBatchMaterials
+      tags:
+      - Traceability
+      summary: List materials consumed by batch
+      description: 'Required role: VIEWER (ADMIN also has write privileges).'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UsageResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: consumeMaterial
+      tags:
+      - Traceability
+      summary: Deduct batch material atomically and append ledger
+      description: 'Required role: STAFF (ADMIN also has write privileges).'
+      responses:
+        '201':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageResponse'
+        '400':
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: JWT missing or invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Insufficient privileges
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '409':
+          description: Conflict / business rule rejected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
+          description: Rate limited
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '500':
+          description: Sanitized unexpected error (no stack traces)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsageRequest'
+      parameters:
+      - in: path
+        name: id
+        required: true
+        schema:
+          type: string
+          format: uuid
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    WeightInput:
+      type: object
+      required:
+      - value
+      - unit
+      properties:
+        value:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          type: string
+          enum:
+          - KG
+          - G
+    LoginRequest:
+      type: object
+      required:
+      - email
+      - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+        expiresInSeconds:
+          type: integer
+        role:
+          type: string
+    UserRequest:
+      type: object
+      required:
+      - email
+      - password
+      - role
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 12
+        role:
+          type: string
+          enum:
+          - ADMIN
+          - STAFF
+          - VIEWER
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        role:
+          type: string
+        enabled:
+          type: boolean
+    SupplierRequest:
+      type: object
+      required:
+      - name
+      - contactEmail
+      - originRegion
+      - active
+      properties:
+        name:
+          type: string
+        contactEmail:
+          type: string
+          format: email
+        originRegion:
+          type: string
+        active:
+          type: boolean
+    SupplierResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        contactEmail:
+          type: string
+        originRegion:
+          type: string
+        active:
+          type: boolean
+    ProductionLineRequest:
+      type: object
+      required:
+      - code
+      - name
+      - capacityKgPerDay
+      - active
+      properties:
+        code:
+          type: string
+          pattern: ^[A-Z0-9-]{2,20}$
+        name:
+          type: string
+        capacityKgPerDay:
+          type: number
+          minimum: 0.001
+        active:
+          type: boolean
+    ProductionLineResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        capacityKgPerDay:
+          type: number
+        active:
+          type: boolean
+    MaterialRequest:
+      type: object
+      required:
+      - lotCode
+      - supplierId
+      - materialName
+      - openingStock
+      properties:
+        lotCode:
+          type: string
+        supplierId:
+          type: string
+          format: uuid
+        materialName:
+          type: string
+        openingStock:
+          $ref: '#/components/schemas/WeightInput'
+        expiryDate:
+          type: string
+          format: date
+          nullable: true
+    MaterialUpdateRequest:
+      type: object
+      required:
+      - lotCode
+      - supplierId
+      - materialName
+      additionalProperties: false
+      properties:
+        lotCode:
+          type: string
+          maxLength: 100
+        supplierId:
+          type: string
+          format: uuid
+        materialName:
+          type: string
+          maxLength: 140
+        expiryDate:
+          type: string
+          format: date
+          nullable: true
+    MaterialResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        lotCode:
+          type: string
+        supplierId:
+          type: string
+          format: uuid
+        materialName:
+          type: string
+        stockKg:
+          type: number
+        expiryDate:
+          type: string
+          format: date
+          nullable: true
+        archived:
+          type: boolean
+    StockAdjustmentRequest:
+      type: object
+      required:
+      - change
+      - reason
+      - increase
+      properties:
+        change:
+          $ref: '#/components/schemas/WeightInput'
+        reason:
+          type: string
+        increase:
+          type: boolean
+    MovementResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        materialLotId:
+          type: string
+          format: uuid
+        changeKg:
+          type: number
+        reason:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    BatchRequest:
+      type: object
+      required:
+      - batchNumber
+      - productName
+      - productionLineId
+      - supplierId
+      - rawWeight
+      - outputWeight
+      - producedAt
+      - shift
+      - status
+      - machineCode
+      properties:
+        batchNumber:
+          type: string
+          description: Legacy number; NOT unique after reset
+        productName:
+          type: string
+        productionLineId:
+          type: string
+          format: uuid
+        supplierId:
+          type: string
+          format: uuid
+        rawWeight:
+          $ref: '#/components/schemas/WeightInput'
+        outputWeight:
+          $ref: '#/components/schemas/WeightInput'
+        producedAt:
+          type: string
+          format: date-time
+        shift:
+          type: string
+          enum:
+          - DAY
+          - EVENING
+          - NIGHT
+        moisturePercent:
+          type: number
+          minimum: 0
+          maximum: 100
+          nullable: true
+        status:
+          type: string
+          enum:
+          - PLANNED
+          - IN_PROGRESS
+          - COMPLETED
+          - QUARANTINED
+        machineCode:
+          type: string
+        notes:
+          type: string
+          nullable: true
+    BatchResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        batchNumber:
+          type: string
+        productName:
+          type: string
+        productionLineId:
+          type: string
+          format: uuid
+        supplierId:
+          type: string
+          format: uuid
+        rawWeightKg:
+          type: number
+        outputWeightKg:
+          type: number
+        producedAt:
+          type: string
+          format: date-time
+        shift:
+          type: string
+        moisturePercent:
+          type: number
+          nullable: true
+        status:
+          type: string
+        machineCode:
+          type: string
+        notes:
+          type: string
+          nullable: true
+    QualityRequest:
+      type: object
+      required:
+      - checkedAt
+      - result
+      properties:
+        checkedAt:
+          type: string
+          format: date-time
+        moisturePercent:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 100
+        result:
+          type: string
+          enum:
+          - PASS
+          - FAIL
+          - PENDING
+        notes:
+          type: string
+          nullable: true
+    QualityResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        batchId:
+          type: string
+          format: uuid
+        checkedAt:
+          type: string
+          format: date-time
+        moisturePercent:
+          type: number
+          nullable: true
+        result:
+          type: string
+        notes:
+          type: string
+          nullable: true
+    UsageRequest:
+      type: object
+      required:
+      - materialLotId
+      - quantity
+      properties:
+        materialLotId:
+          type: string
+          format: uuid
+        quantity:
+          $ref: '#/components/schemas/WeightInput'
+    UsageResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        batchId:
+          type: string
+          format: uuid
+        materialLotId:
+          type: string
+          format: uuid
+        quantityKg:
+          type: number
+    TraceResponse:
+      type: object
+      properties:
+        batch:
+          $ref: '#/components/schemas/BatchResponse'
+        supplier:
+          $ref: '#/components/schemas/SupplierResponse'
+        productionLine:
+          $ref: '#/components/schemas/ProductionLineResponse'
+        qualityChecks:
+          type: array
+          items:
+            $ref: '#/components/schemas/QualityResponse'
+        materials:
+          type: array
+          items:
+            $ref: '#/components/schemas/UsageResponse'
+    Problem:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        fields:
+          type: object
+          additionalProperties:
+            type: string
